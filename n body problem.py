@@ -50,15 +50,20 @@ def rhs(state):
         get_sum(state), axis=1
     )
     q_dot = ic[:,2] / ic[:, 0]
-
+# %%
 def get_sum(state):
+    "gets the sum for computing p_dot, satisfying the condition that i!=j"
+    ms = state[:, 0, :]
     qs = state[:, 2, :]
-    qs_rep = np.repeat(qs[..., np.newaxis], N, -1)
-    qs_transp = np.swapaxes(qs_rep, 0,-1)
-    qs_diff = qs_rep - qs_transp
-    # put the coordinates into the last axis so that qs_diff[0,1] = q0 - q1
-    qs_diff = np.swapaxes( qs_diff, 1,-1)
-    return 
+    ms, ms_T = permute(ms)
+    qs, qs_T = permute(qs)
+    
+    return mask(out)
 
 def permute(data):
+    "input with three axis"
+    data = np.repeat(data[:,np.newaxis,:,:], data.shape[0], 1)
+    data_transp = np.swapaxes(data, 0, 1)
+    return data, data_transp
+    
     
