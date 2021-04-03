@@ -33,16 +33,6 @@ ic = np.array([
 ])
 # ic = np.array([ [1,[0,0], [1,0]], [1,[0,0],[0,0]] ],object)
 # ic = np.array([ [[m1]*dim,[0,0], [3,0]], [[m2]*dim,[0,0],[0,0]] ])
-
-# %%
-state = ic
-qs = state[:, 2, :]
-qs_rep = np.repeat(qs[..., np.newaxis], N, -1)
-qs_transp = np.swapaxes(qs_rep, 0,-1)
-qs_diff = qs_rep - qs_transp
-# put the coordinates into the last axis
-qs_diff = np.swapaxes( qs_diff, 1,-1)
-# np.ma.MaskedArray(qs_diff, np.identity(N, dtype=bool))
 # %%
 def rhs(state):
     "right hand side"
@@ -57,13 +47,25 @@ def get_sum(state):
     qs = state[:, 2, :]
     ms, ms_T = permute(ms)
     qs, qs_T = permute(qs)
-    
+    m_product = ms*ms_T
+    qs_diff = qs - qs_T
+    qs_norm = np.linalg.norm(qs_diff, 1)
+    out = m_product * qs_diff / qs_norm**3
     return mask(out)
 
 def permute(data):
-    "input with three axis"
+    """input with three axis
+    computes the transpose of the repeated input containing vectors
+    """
+    print(data)
     data = np.repeat(data[:,np.newaxis,:,:], data.shape[0], 1)
     data_transp = np.swapaxes(data, 0, 1)
     return data, data_transp
     
-    
+def mask(inp):
+    assert inp.shape[0] == inp.shape[1]
+    n = inp.shape[0]
+    return np.ma.MaskedArray(inp, np.identity(n, bool))
+
+# %% 
+get_sum(ic)
