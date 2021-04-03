@@ -19,6 +19,7 @@ def impl_mpr(T,N, sys, ic):
 # %%
 N = 2
 dim = 2
+G = 1
 # [planet, mass(0) or momentum (1) or position (2)]
 ic = np.empty((N,3,dim))
 m1 = 1
@@ -33,39 +34,31 @@ ic = np.array([
 # ic = np.array([ [1,[0,0], [1,0]], [1,[0,0],[0,0]] ],object)
 # ic = np.array([ [[m1]*dim,[0,0], [3,0]], [[m2]*dim,[0,0],[0,0]] ])
 
-G = 1
 # %%
 state = ic
 qs = state[:, 2, :]
-# qs = np.swapaxes(qs,1,0)
 qs_rep = np.repeat(qs[..., np.newaxis], N, -1)
-assert all(qs_rep[0,...,0]==pos1)
-# qs_swap = np.swapaxes(qs_rep, 1,-1)
 qs_transp = np.swapaxes(qs_rep, 0,-1)
-# qs_diff = qs_swap - qs_transp
-# assert all( qs_diff[0,0] == pos1 - pos1)
 qs_diff = qs_rep - qs_transp
 # put the coordinates into the last axis
 qs_diff = np.swapaxes( qs_diff, 1,-1)
-
 # np.ma.MaskedArray(qs_diff, np.identity(N, dtype=bool))
 # %%
 def rhs(state):
+    "right hand side"
     p_dot = G*np.sum(
         get_sum(state), axis=1
     )
     q_dot = ic[:,2] / ic[:, 0]
 
 def get_sum(state):
-    # x = np.reshape([1,2,3]*3, (3,3))
-    # x[np.identity(3, dtype=bool)] = 0
-    # np.sum(x, 1)
-    # np.ma.MaskedArray(x,np.identity(n, dtype=bool))
-    # m = state[:,0]* np.reshape(state[:,0], (-1,1))
-    # q = state[:,2]* np.reshape(state[:,2], (-1,1))
-    # mi =np.ma.MaskedArray(m, np.identity(N))
-    # mi =np.ma.MaskedArray(q, np.identity(N))
     qs = state[:, 2, :]
     qs_rep = np.repeat(qs[..., np.newaxis], N, -1)
-    np.transpose(qs_rep,0)
+    qs_transp = np.swapaxes(qs_rep, 0,-1)
+    qs_diff = qs_rep - qs_transp
+    # put the coordinates into the last axis so that qs_diff[0,1] = q0 - q1
+    qs_diff = np.swapaxes( qs_diff, 1,-1)
     return 
+
+def permute(data):
+    
