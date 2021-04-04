@@ -43,29 +43,40 @@ def rhs(state):
 # %%
 def get_sum(state):
     "gets the sum for computing p_dot, satisfying the condition that i!=j"
-    ms = state[:, 0, :]
+    masses = state[:, 0, :]
     qs = state[:, 2, :]
-    ms, ms_T = permute(ms)
+    masses, ms_T = permute(masses)
     qs, qs_T = permute(qs)
-    m_product = ms*ms_T
+    m_product = masses*ms_T
     qs_diff = qs - qs_T
-    qs_norm = np.linalg.norm(qs_diff, 1)
+    qs_norm = np.linalg.norm(qs_diff, axis=2)
+    print(qs_norm)
     out = m_product * qs_diff / qs_norm**3
+    print(out)
     return mask(out)
 
 def permute(data):
-    """input with three axis
+    """input with 2 axis
     computes the transpose of the repeated input containing vectors
     """
-    print(data)
-    data = np.repeat(data[:,np.newaxis,:,:], data.shape[0], 1)
+    # print(f"data[0]: {data[0]}")
+    data = np.repeat(data[:,np.newaxis,:], data.shape[0], 1)
+    # print(f"data[0,0]: {data[0,0]}")
+    # print(f"data[1,0]: {data[1,0]}")
     data_transp = np.swapaxes(data, 0, 1)
+    # print(f"data_transp[0,1]: {data_transp[0,1]}")
     return data, data_transp
     
 def mask(inp):
     assert inp.shape[0] == inp.shape[1]
     n = inp.shape[0]
-    return np.ma.MaskedArray(inp, np.identity(n, bool))
+    dims = inp.shape[2]
+    id_ = np.identity(n, bool)
+    mask = np.tile(id_, (1,1,dims))
+    mask = np.repeat( np.identity(n, bool)[..., np.newaxis], dims, axis= -1 )
+    return np.ma.MaskedArray(inp, mask)
 
 # %% 
+a = permute(ic[:,2])
 get_sum(ic)
+# %%
