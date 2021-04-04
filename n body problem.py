@@ -7,14 +7,16 @@ from scipy.optimize import fsolve
 # from pandas import DataFrame
 # from functools import lru_cache
 # %%
-def impl_mpr(T,N, sys, ic):
+def impl_mpr(T,N, right_hand_side, ic):
     t, dt = np.linspace(0,T, N, retstep=True)
     sol = np.empty((N,) + np.shape(ic))
-    sol[0,...] = ic
+    sol[0] = ic
     for i in range(N-1):
-        print(f"sol[i] shape: {sol[i].shape}", f"sys shape:{sys(sol[0]).shape}")
+        assert sol[0].shape == right_hand_side(sol[0]).shape,f"sol[i] shape: {sol[i].shape}, sys shape:{right_hand_side(sol[0]).shape}"
+        print(sol[i].shape)
         sol[i+1] = fsolve(
-            lambda x : x - (sol[i] + dt*(sys(0.5*(sol[i] + x)))), sol[i])
+            # fsolve seems to change the shape and flatten the array from (2,3,2) to 2*3*2=12
+            lambda x : x - (sol[i] + dt*(right_hand_side(0.5*(sol[i] + x)))), sol[i])
     return t, sol
 # %%
 N = 2
@@ -48,7 +50,7 @@ def rhs(state):
 def get_sum(state):
     "gets the sum for computing p_dot, satisfying the condition that i!=j"
     n = np.shape(state)[0]
-    sum = np.zeros((n, dim))
+    sum_ = np.zeros((n, dim))
     for k in range(n):
         mk = state[k,0]
         qk = state[k, 2]
@@ -57,10 +59,8 @@ def get_sum(state):
                 continue
             mi = state[i,0]
             qi = state[i,2]
-            sum[k,:] += mi*mk/(np.linalg.norm(qi - qk)**3) * (qi - qk)
-    # assert all(sum != 0)
-    print(sum)
-    return sum
+            sum_[k,:] += mi*mk/(np.linalg.norm(qi - qk)**3) * (qi - qk)
+    return sum_
 
 # %%
 t, y = impl_mpr(3, 100, rhs, ic)
