@@ -7,6 +7,12 @@ from scipy.optimize import fsolve
 # from pandas import DataFrame
 # from functools import lru_cache
 # %%
+def mpr_solve(x, sol, i, dt, right_hand_side):
+    # fsolve is only able to solve vector valued functions, so I will have to reshape everything
+    x = np.reshape(x, np.shape(sol[0]))
+    out = x - (sol[i] + dt*(right_hand_side(0.5*(sol[i] + x))))
+    return np.reshape(out, (-1))
+
 def impl_mpr(T,N, right_hand_side, ic):
     t, dt = np.linspace(0,T, N, retstep=True)
     sol = np.empty((N,) + np.shape(ic))
@@ -14,9 +20,7 @@ def impl_mpr(T,N, right_hand_side, ic):
     for i in range(N-1):
         assert sol[0].shape == right_hand_side(sol[0]).shape,f"sol[i] shape: {sol[i].shape}, sys shape:{right_hand_side(sol[0]).shape}"
         print(sol[i].shape)
-        sol[i+1] = fsolve(
-            # fsolve seems to change the shape and flatten the array from (2,3,2) to 2*3*2=12
-            lambda x : x - (sol[i] + dt*(right_hand_side(0.5*(sol[i] + x)))), sol[i])
+        sol[i+1] = np.reshape( fsolve(mpr_solve,sol[i], args=(sol, i, dt, right_hand_side)), np.shape(ic))
     return t, sol
 # %%
 N = 2
@@ -63,9 +67,16 @@ def get_sum(state):
     return sum_
 
 # %%
-t, y = impl_mpr(3, 100, rhs, ic)
-
-plt.plot(*y[0,2])
-plt.plot(*y[1,2])
-plt.show()
+t, sol = impl_mpr(3, 100, rhs, ic)
+print("---------------------------------------")
+print(sol.shape, ic.shape)
+print(sol)
+print("----------------------------------------------")
+x1,y1 = np.transpose(sol[:,0,2,0:2], (-1,0))
+x2,y2 = np.transpose(sol[:,1,2,0:2], (-1,0))
+print(x1,y1)
+print(x2,y2)
+plt.plot(x1,y1)
+plt.plot(x2,y2)
+# plt.show()
 # %%
