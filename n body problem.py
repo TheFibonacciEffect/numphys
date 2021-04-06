@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from scipy.optimize import fsolve
 
 # This code doesnt work, one reason is that fsolve cant solve tensor valued funcions. 
-# I worked arround it by reshapeing everything
+# I worked arround it by reshapeing everything into vectors and then into tensors and back into vectors
 # However that doesnt seem to be the only problem with this code. 
 # Somehow the y axis of the position seems to be missing. The collumn only contains zeros.
 # I guess that there may be some mistake with reshapeing and indecies. (or maybe I am stupid and just plotting the wrong data)
