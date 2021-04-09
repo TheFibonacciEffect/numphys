@@ -68,7 +68,7 @@ def get_sum(state):
     return sum_
 
 # %%
-t, sol = impl_mpr(3, 100, rhs, initial_conditions)
+t, sol = impl_mpr(100, 100, rhs, initial_conditions)
 print("---------------------------------------")
 print("This is the whole solution")
 print(sol.shape, initial_conditions.shape)
@@ -81,4 +81,7 @@ print(x2,y2)
 plt.plot(x1,y1)
 plt.plot(x2,y2)
 # plt.show()
+plt.clf()
+plt.plot(x2)
+plt.show()
 # %%
