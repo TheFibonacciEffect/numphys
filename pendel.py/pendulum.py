@@ -16,6 +16,8 @@ def integrate(method, y0, t_end, n_steps):
 
     return t, y
 
+def
+
 
 def plot_angle(t, all_y, all_labels):
     """Plottet den Winkel als Funktion der Zeit.

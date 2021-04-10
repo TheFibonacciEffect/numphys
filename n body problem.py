@@ -46,7 +46,7 @@ initial_conditions = np.array([
 def rhs(state):
     "right hand side"
     p_dot = G*get_sum(state)
-    q_dot = state[:,2] / state[:, 0]
+    q_dot = state[:,1] / state[:, 0]
     out = np.array([state[:,0], p_dot, q_dot]) # (variable, body, dimension)
     out = np.transpose(out, (1,0,2)) # (body, variable, dimension)
     assert out.shape == state.shape, f"shape in {state.shape} != shape out {out.shape}"
