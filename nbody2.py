@@ -3,7 +3,7 @@ from numpy.linalg import norm
 import matplotlib.pyplot as plt
 from scipy.optimize import fsolve
 from nbody import planet_ic
-import mpl_toolkits.mplot3d.axes3d as p3
+import mpl_toolkits.mplot3d.axes3d as plt3d_ax
 from matplotlib.animation import FuncAnimation
 
 
@@ -136,7 +136,7 @@ def plot_animation(data):
 
     # Attaching 3D axis to the figure
     fig = plt.figure()
-    ax = p3.Axes3D(fig)
+    ax = plt3d_ax.Axes3D(fig)
 
     # NOTE: Can't pass empty arrays into 3d version of plot()
     # passing first data points
@@ -173,7 +173,8 @@ def plot_animation(data):
     plt.show()
 
 if __name__== "__main__":
-    task = input("which task should be solved? (d,e,f)")
+    d = {"y" : True,"n": False}
+    task = input("which task should be solved? (d,e,f) \n type something else to enter your own input")
     if task == "d":
         N = 2
         G = 1
@@ -202,8 +203,30 @@ if __name__== "__main__":
         ms, ic = planet_ic()
         ic = np.ravel(ic)
     else:
-        print("not implemented, try again")
-        quit()
+        own = d[input("do you want to enter your own input? (y/n)") or "n"]
+        if own:
+            N = int(input("number of planets: "))
+            G = float(input("G: "))
+            q = []
+            p = []
+            ms = []
+            for i in range(N):
+                print(f"enter data for planet {i}")
+                m = float(input("mass= "))
+                assert m > 0, "there is no negative mass"
+                qx = float(input("qx: ") or 0)
+                qy = float(input("qy: ") or 0)
+                qz = float(input("qz: ") or 0)
+                px = float(input("px: ") or 0)
+                py = float(input("py: ") or 0)
+                pz = float(input("pz: ") or 0)
+                q.extend([qx,qy,qz])
+                p.extend([px,py,pz])
+                ms.append(m)
+            ic = q + p
+        else:
+            print("not implemented, try again")
+            quit()
 
     method = input("method (expl_euler, mpr, vvv): ") or "mpr"
     translator = {
@@ -213,7 +236,6 @@ if __name__== "__main__":
     }
     T = float(input("endtime (default 2e4): ") or "2e4")
     num = int(float(input("steps (default 2000): ") or 2e3))
-    d = {"y" : True,"n": False}
     output = d[input("3D output? (y/n) (default: y)") or "y"]
     animate = d[input("animate? (y/n): ") or "y"]
 
