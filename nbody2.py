@@ -127,6 +127,13 @@ def plot_animation(data):
             line.set_3d_properties(data[2,:num])
         return lines
 
+    def update(num, dataLines, lines):
+        n = int(len(lines)/2)
+        print(n)
+        out = update_planets(num, dataLines, lines[:n])  + update_lines(num, dataLines, lines[n:])
+        print(np.shape(out))
+        return out
+
     # Attaching 3D axis to the figure
     fig = plt.figure()
     ax = p3.Axes3D(fig)
@@ -164,9 +171,10 @@ def plot_animation(data):
     ax.set_title('our solar sytem')
 
     # Creating the Animation object
+    planets.extend(lines)
     number_of_time_points = data.shape[-1]
-    line_ani = FuncAnimation(fig, update_planets, np.arange(0,number_of_time_points,1), fargs=(data, planets), interval=50, blit=False)
-    line_ani = FuncAnimation(fig, update_lines, np.arange(0,number_of_time_points,1), fargs=(data, lines), interval=50, blit=True)
+    line_ani = FuncAnimation(fig, update, np.arange(0,number_of_time_points,1), fargs=(data, planets), interval=50, blit=False)
+    # line_ani = FuncAnimation(fig, update_lines, np.arange(0,number_of_time_points,1), fargs=(data, lines), interval=50, blit=True)
     plt.legend()
     plt.show()
 
