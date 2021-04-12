@@ -110,13 +110,21 @@ def plot_orbits(three_dim, y, animate):
     return
 
 def plot_animation(data):
+    plt.style.use('dark_background')
     print("plot animation")
 
-    def update_lines(num, dataLines, lines) :
+    def update_planets(num, dataLines, lines) :
         for line, data in zip(lines, dataLines) :
             # NOTE: there is no .set_data() for 3 dim data...
             line.set_data(data[0:2, num])
             line.set_3d_properties(data[2,num])
+        return lines
+
+    def update_lines(num, dataLines, lines) :
+        for line, data in zip(lines, dataLines) :
+            # NOTE: there is no .set_data() for 3 dim data...
+            line.set_data(data[0:2, :num])
+            line.set_3d_properties(data[2,:num])
         return lines
 
     # Attaching 3D axis to the figure
@@ -133,9 +141,17 @@ def plot_animation(data):
     print(f"new shape {data.shape}")
     for planet in data:
         print(planet[0,0], planet[1,0], planet[2,0])
-    lines = [ax.plot(planet[0,0], planet[1,0], planet[2,0], "o")[0] for planet in data]
+
+    labels = ["sun","jupyter", "saturn", "uranus", "neptune", "pluto"]
+    colors = ["yellow", "darkorange", "orange","cornflowerblue", "darkblue", "dimgray"]
+    planets = [ax.plot(planet[0,0], planet[1,0], planet[2,0], "o", color= color, label=label)[0] for planet, color, label in zip(data, colors, labels)]
+    lines = [ax.plot(planet[0,0], planet[1,0], planet[2,0], "--", color= color, label=label)[0] for planet, color, label in zip(data, colors, labels)]
 
     # Setting the axes properties
+    ax.w_xaxis.set_pane_color((0, 0, 0, 0))
+    ax.w_yaxis.set_pane_color((0, 0, 0, 0))
+    ax.w_zaxis.set_pane_color((0, 0, 0, 0))
+
     ax.set_xlim3d([-15, 20.0])
     ax.set_xlabel('X')
 
@@ -145,12 +161,13 @@ def plot_animation(data):
     ax.set_zlim3d([-15.0, 5.0])
     ax.set_zlabel('Z')
 
-    ax.set_title('3D Test')
+    ax.set_title('our solar sytem')
 
     # Creating the Animation object
     number_of_time_points = data.shape[-1]
-    line_ani = FuncAnimation(fig, update_lines, np.arange(0,number_of_time_points,1), fargs=(data, lines), interval=50, blit=False)
-
+    line_ani = FuncAnimation(fig, update_planets, np.arange(0,number_of_time_points,1), fargs=(data, planets), interval=50, blit=False)
+    line_ani = FuncAnimation(fig, update_lines, np.arange(0,number_of_time_points,1), fargs=(data, lines), interval=50, blit=True)
+    plt.legend()
     plt.show()
 
 if __name__== "__main__":
@@ -192,16 +209,16 @@ if __name__== "__main__":
     translator = {
         "expl_euler": expl_euler,
         "mpr": impl_mpr,
-        "vvv": vvv
+        # "vvv": vvv
     }
     T = 20000
     # T = float(input("endtime: "))
     num = 1000
     # num = int(input("steps: "))
     d = {"y" : True,"n": False}
-    # output = d[input("3D output? (y/n) ")]
+    # output = d[input("3D output? (y/n) ")] or task == f
     output = True
-    animate = True
+    animate = task == "f"
 
     if method == "vvv":
         y = translator[method](T,num,acc_vvv,ic, ms, N)
