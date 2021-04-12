@@ -30,10 +30,10 @@ def acc_vvv(positions,ms,N):
     dim = 3
     state = np.reshape(positions, (N, dim)) # reshape so that it is a vector of positions
     F = G*get_sum(state,ms)# p_dot/m = p_double_dot
-    q_dd = np.array([F[k] / ms[k%3] for k in range(len(F))]) #TODO optimize
-    # return the flattened output with [q_dd]
-    print(f"q_dd shape: {np.shape(q_dd)}")
-    return q_dd[:,0] #TODO why is this shape (18,1) instead of (18, )
+    M = ms.reshape(-1,1)
+    F = F.reshape(N, dim)
+    q_dd = F/M
+    return np.ravel(q_dd)
 
 def get_sum(qs, ms): # (6, 3), (6, 1)
     out = np.zeros_like(qs, dtype=np.float32)
@@ -61,20 +61,21 @@ def expl_euler(T,num, right_hand_side, initial_conditions, ms,n):
     return sol
 
 def vvv(T,num, acc, initial_conditions, ms,n):
-    """returns: position with shape: (num, )
+    """returns: positions with shape: (num, N*3)
     """
     t, dt = np.linspace(0,T, num, retstep=True)
     xi = initial_conditions[:N*3]
     pi = initial_conditions[3*N:]
+    ms = np.ravel(ms)
+    pi =[v/ms[n//3] for n,v in enumerate(pi) ]
     x = np.empty((num,) + np.shape(xi))
     v = np.empty((num,) + np.shape(pi))
     x[0] = xi
-    print(f"num: {num}")
-    print(v[0].shape, ms.shape, pi.shape)
-    v[0] = [pi[n]/ms[n%3] for n in range(len(pi)) ] #TODO optimize
+    v[0] = pi
     for i in tqdm(range(num-1)):
         x[i+1] = x[i] + dt* v[i] + 0.5* dt**2*acc(x[i], ms, n)
         v[i+1] = v[i] + dt* acc(x[i], ms, n)
+    # NOTE Velvet only returns the positions, not the momenta
     return x
 
 def plot_orbits(three_dim, y, animate):
@@ -83,7 +84,6 @@ def plot_orbits(three_dim, y, animate):
         return
 
     N = len(y[0])/(3*2)
-    assert N.is_integer(), "is your problem not in 3 dimensions?"
     N = int(N)
     fig = plt.figure()
     if three_dim:
@@ -95,7 +95,7 @@ def plot_orbits(three_dim, y, animate):
         N = int(len(y[0])/(3))
 
     y_t = np.transpose(y)
-    slicing = 100
+    slicing = 1
     for i in range(N):
         xi = y_t[3*i][::slicing]
         yi = y_t[3*i+1][::slicing]
@@ -110,8 +110,10 @@ def plot_orbits(three_dim, y, animate):
     return
 
 def plot_animation(data):
+    number_of_planets = data.shape[1]//3 if velocity_velvet else data.shape[1]//6
+    speed = int(input("animation speed (5 works good for 1000 datapoints): ") or 6)
+
     plt.style.use('dark_background')
-    print("plot animation")
 
     def update_planets(num, dataLines, lines) :
         for line, data in zip(lines, dataLines) :
@@ -129,9 +131,7 @@ def plot_animation(data):
 
     def update(num, dataLines, lines):
         n = int(len(lines)/2)
-        print(n)
         out = update_planets(num, dataLines, lines[:n])  + update_lines(num, dataLines, lines[n:])
-        print(np.shape(out))
         return out
 
     # Attaching 3D axis to the figure
@@ -140,19 +140,13 @@ def plot_animation(data):
 
     # NOTE: Can't pass empty arrays into 3d version of plot()
     # passing first data points
-    number_of_planets = 6
         
     data = np.transpose(data) # [time, posistions | momenta] -> [posistions | momenta, time]
-    print(f"shape {data.shape}")
     data = np.array([[data[3*n,:], data[3*n+1,:], data[3*n +2, :]] for n in range(number_of_planets)])
-    print(f"new shape {data.shape}")
-    for planet in data:
-        print(planet[0,0], planet[1,0], planet[2,0])
-
     labels = ["sun","jupyter", "saturn", "uranus", "neptune", "pluto"]
     colors = ["yellow", "darkorange", "orange","cornflowerblue", "darkblue", "dimgray"]
     planets = [ax.plot(planet[0,0], planet[1,0], planet[2,0], "o", color= color, label=label)[0] for planet, color, label in zip(data, colors, labels)]
-    lines = [ax.plot(planet[0,0], planet[1,0], planet[2,0], "--", color= color, label=label)[0] for planet, color, label in zip(data, colors, labels)]
+    lines = [ax.plot(planet[0,0], planet[1,0], planet[2,0], "--", color= color)[0] for planet, color, label in zip(data, colors, labels)]
 
     # Setting the axes properties
     ax.w_xaxis.set_pane_color((0, 0, 0, 0))
@@ -173,14 +167,13 @@ def plot_animation(data):
     # Creating the Animation object
     planets.extend(lines)
     number_of_time_points = data.shape[-1]
-    line_ani = FuncAnimation(fig, update, np.arange(0,number_of_time_points,1), fargs=(data, planets), interval=50, blit=False)
+    line_ani = FuncAnimation(fig, update, np.arange(0,number_of_time_points,speed), fargs=(data, planets), interval=50, blit=True)
     # line_ani = FuncAnimation(fig, update_lines, np.arange(0,number_of_time_points,1), fargs=(data, lines), interval=50, blit=True)
     plt.legend()
     plt.show()
 
 if __name__== "__main__":
-    # task = input("which task should be solved? ")
-    task = "f"
+    task = input("which task should be solved? (d,e,f)")
     if task == "d":
         N = 2
         G = 1
@@ -212,26 +205,25 @@ if __name__== "__main__":
         print("not implemented, try again")
         quit()
 
-    # method = input("method (expl_euler, mpr, vvv): ")
-    method = "expl_euler"
+    method = input("method (expl_euler, mpr, vvv): ") or "mpr"
     translator = {
         "expl_euler": expl_euler,
         "mpr": impl_mpr,
-        # "vvv": vvv
+        "vvv": vvv
     }
-    T = 20000
-    # T = float(input("endtime: "))
-    num = 1000
-    # num = int(input("steps: "))
+    T = float(input("endtime (default 2e4): ") or "2e4")
+    num = int(float(input("steps (default 2000): ") or 2e3))
     d = {"y" : True,"n": False}
-    # output = d[input("3D output? (y/n) ")] or task == f
-    output = True
-    animate = task == "f"
+    output = d[input("3D output? (y/n) (default: y)") or "y"]
+    animate = d[input("animate? (y/n): ") or "y"]
 
     if method == "vvv":
         y = translator[method](T,num,acc_vvv,ic, ms, N)
-    else: y = translator[method](T,num,right_hand_side,ic, ms, N)
+        velocity_velvet = True
+    else: 
+        velocity_velvet = False
+        y = translator[method](T,num,right_hand_side,ic, ms, N)
 
     print(f"shape of solution: {y.shape}")
-    print(y)
+    # print(y)
     plot_orbits(output, y, animate)
