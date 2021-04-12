@@ -5,6 +5,7 @@ from scipy.optimize import fsolve
 from nbody import planet_ic
 import mpl_toolkits.mplot3d.axes3d as plt3d_ax
 from matplotlib.animation import FuncAnimation
+import matplotlib.animation as animation
 
 
 try: from tqdm import tqdm
@@ -111,10 +112,10 @@ def plot_orbits(three_dim, y, animate):
 
 def plot_animation(data):
     number_of_planets = data.shape[1]//3 if velocity_velvet else data.shape[1]//6
-    speed = int(input("animation speed (5 works good for 1000 datapoints): ") or 6)
+    speed = int(input("animation speed \n(6 works good for 2000 datapoints in the case of the solar system, this needs to be adjusted, when number of points change, eg. use 12 for 4000 datapoints) \ndefault is 6: ") or 6)
 
     plt.style.use('dark_background')
-
+    plt.rcParams['grid.color'] = "dimgray"
     def update_planets(num, dataLines, lines) :
         for line, data in zip(lines, dataLines) :
             # NOTE: there is no .set_data() for 3 dim data...
@@ -170,11 +171,15 @@ def plot_animation(data):
     line_ani = FuncAnimation(fig, update, np.arange(0,number_of_time_points,speed), fargs=(data, planets), interval=50, blit=True)
     # line_ani = FuncAnimation(fig, update_lines, np.arange(0,number_of_time_points,1), fargs=(data, lines), interval=50, blit=True)
     plt.legend()
+    if "y" == input("do you want to save the animation? (y/n)"):
+        Writer = animation.writers['ffmpeg']
+        writer = Writer(fps=15, metadata=dict(artist='Me'), bitrate=1800)
+        line_ani.save('im.mp4', writer=writer)
     plt.show()
 
 if __name__== "__main__":
     d = {"y" : True,"n": False}
-    task = input("which task should be solved? (d,e,f) \n type something else to enter your own input")
+    task = input("which task should be solved? (d,e,f) \ntype something else to enter your own input ")
     if task == "d":
         N = 2
         G = 1
@@ -225,10 +230,10 @@ if __name__== "__main__":
                 ms.append(m)
             ic = q + p
         else:
-            print("not implemented, try again")
+            print("okay, the program will now terminate")
             quit()
 
-    method = input("method (expl_euler, mpr, vvv): ") or "mpr"
+    method = input("method (expl_euler, mpr, vvv): (default: mpr)") or "mpr"
     translator = {
         "expl_euler": expl_euler,
         "mpr": impl_mpr,
@@ -237,7 +242,7 @@ if __name__== "__main__":
     T = float(input("endtime (default 2e4): ") or "2e4")
     num = int(float(input("steps (default 2000): ") or 2e3))
     output = d[input("3D output? (y/n) (default: y)") or "y"]
-    animate = d[input("animate? (y/n): ") or "y"]
+    animate = d[input("animate? (y/n) (default y): ") or "y"]
 
     if method == "vvv":
         y = translator[method](T,num,acc_vvv,ic, ms, N)
@@ -245,7 +250,4 @@ if __name__== "__main__":
     else: 
         velocity_velvet = False
         y = translator[method](T,num,right_hand_side,ic, ms, N)
-
-    print(f"shape of solution: {y.shape}")
-    # print(y)
     plot_orbits(output, y, animate)
